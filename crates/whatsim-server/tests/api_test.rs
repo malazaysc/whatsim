@@ -13,7 +13,7 @@ use whatsim_storage::InMemoryStore;
 /// Build a fresh app + state for each test.
 fn test_app() -> axum::Router {
     let store = InMemoryStore::new();
-    let engine = SimulationEngine::new(store, None);
+    let engine = SimulationEngine::new(store, None, None);
     let (tx, _rx) = broadcast::channel(256);
     let state = AppState {
         engine,
@@ -61,7 +61,7 @@ async fn test_health_endpoint() {
 #[tokio::test]
 async fn test_create_and_list_conversations() {
     let store = InMemoryStore::new();
-    let engine = SimulationEngine::new(store, None);
+    let engine = SimulationEngine::new(store, None, None);
     let (tx, _rx) = broadcast::channel(256);
     let state = AppState {
         engine,
@@ -117,7 +117,7 @@ async fn test_create_and_list_conversations() {
 #[tokio::test]
 async fn test_get_conversation() {
     let store = InMemoryStore::new();
-    let engine = SimulationEngine::new(store, None);
+    let engine = SimulationEngine::new(store, None, None);
     let (tx, _rx) = broadcast::channel(256);
     let state = AppState {
         engine,
@@ -170,7 +170,7 @@ async fn test_get_conversation() {
 #[tokio::test]
 async fn test_inbound_text_flow() {
     let store = InMemoryStore::new();
-    let engine = SimulationEngine::new(store, None);
+    let engine = SimulationEngine::new(store, None, None);
     let (tx, _rx) = broadcast::channel(256);
     let state = AppState {
         engine,
@@ -249,7 +249,7 @@ async fn test_inbound_text_flow() {
 #[tokio::test]
 async fn test_mock_meta_outbound_flow() {
     let store = InMemoryStore::new();
-    let engine = SimulationEngine::new(store, None);
+    let engine = SimulationEngine::new(store, None, None);
     let (tx, _rx) = broadcast::channel(256);
     let state = AppState {
         engine,
@@ -330,7 +330,7 @@ async fn test_mock_meta_outbound_flow() {
 #[tokio::test]
 async fn test_full_round_trip() {
     let store = InMemoryStore::new();
-    let engine = SimulationEngine::new(store, None);
+    let engine = SimulationEngine::new(store, None, None);
     let (tx, _rx) = broadcast::channel(256);
     let state = AppState {
         engine,

@@ -17,6 +17,7 @@ pub struct AppConfig {
     pub enable_persistence: bool,
     pub default_organization_id: Option<String>,
     pub public_base_url: String,
+    pub webhook_secret: Option<String>,
 }
 
 impl AppConfig {
@@ -49,6 +50,7 @@ impl AppConfig {
             .filter(|s| !s.is_empty());
         let public_base_url = env::var("WHATSIM_PUBLIC_BASE_URL")
             .unwrap_or_else(|_| format!("http://{}:{}", host, port));
+        let webhook_secret = env::var("WHATSIM_WEBHOOK_SECRET").ok().filter(|s| !s.is_empty());
 
         Self {
             host,
@@ -59,6 +61,7 @@ impl AppConfig {
             enable_persistence,
             default_organization_id,
             public_base_url,
+            webhook_secret,
         }
     }
 }
@@ -74,6 +77,7 @@ impl Default for AppConfig {
             enable_persistence: false,
             default_organization_id: None,
             public_base_url: "http://127.0.0.1:3210".into(),
+            webhook_secret: None,
         }
     }
 }

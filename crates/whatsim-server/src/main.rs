@@ -20,7 +20,11 @@ async fn main() -> anyhow::Result<()> {
 
     // Create the in-memory store and simulation engine.
     let store = InMemoryStore::new();
-    let engine = SimulationEngine::new(store, config.webhook_target.clone());
+    let engine = SimulationEngine::new(
+        store,
+        config.webhook_target.clone(),
+        config.webhook_secret.clone(),
+    );
 
     // Create broadcast channel for SSE streaming (capacity 256 events).
     let (tx, _rx) = broadcast::channel(256);

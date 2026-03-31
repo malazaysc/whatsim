@@ -1,4 +1,6 @@
 use chrono::Utc;
+use hmac::{Hmac, Mac};
+use sha2::Sha256;
 use uuid::Uuid;
 
 use whatsim_core::{
@@ -15,14 +17,20 @@ use whatsim_storage::InMemoryStore;
 pub struct SimulationEngine {
     store: InMemoryStore,
     webhook_target: Option<String>,
+    webhook_secret: Option<String>,
     http_client: reqwest::Client,
 }
 
 impl SimulationEngine {
-    pub fn new(store: InMemoryStore, webhook_target: Option<String>) -> Self {
+    pub fn new(
+        store: InMemoryStore,
+        webhook_target: Option<String>,
+        webhook_secret: Option<String>,
+    ) -> Self {
         Self {
             store,
             webhook_target,
+            webhook_secret,
             http_client: reqwest::Client::new(),
         }
     }
@@ -133,11 +141,27 @@ impl SimulationEngine {
             let delivery_event_type;
             let delivery_payload;
 
-            match self
+            // Serialize body once so we can sign it.
+            let body_bytes = serde_json::to_vec(&webhook_payload)
+                .map_err(|e| WhatsimError::Internal(e.to_string()))?;
+
+            let mut request = self
                 .http_client
                 .post(target_url)
-                .header("Content-Type", "application/json")
-                .json(&webhook_payload)
+                .header("Content-Type", "application/json");
+
+            // Sign with HMAC-SHA256 if a webhook secret is configured,
+            // matching Meta's X-Hub-Signature-256 header format.
+            if let Some(ref secret) = self.webhook_secret {
+                let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes())
+                    .expect("HMAC accepts any key length");
+                mac.update(&body_bytes);
+                let signature = hex::encode(mac.finalize().into_bytes());
+                request = request.header("X-Hub-Signature-256", format!("sha256={signature}"));
+            }
+
+            match request
+                .body(body_bytes)
                 .send()
                 .await
             {
@@ -325,7 +349,7 @@ mod tests {
     async fn test_simulate_inbound_text() {
         let store = InMemoryStore::new();
         let conv = setup_conversation(&store).await;
-        let engine = SimulationEngine::new(store.clone(), None);
+        let engine = SimulationEngine::new(store.clone(), None, None);
 
         let (message, normalized_event) = engine
             .simulate_inbound_text(conv.id, "Hello from test")
@@ -365,7 +389,7 @@ mod tests {
     #[tokio::test]
     async fn test_simulate_inbound_text_missing_conversation() {
         let store = InMemoryStore::new();
-        let engine = SimulationEngine::new(store, None);
+        let engine = SimulationEngine::new(store, None, None);
 
         let result = engine
             .simulate_inbound_text(Uuid::new_v4(), "ghost message")
@@ -383,7 +407,7 @@ mod tests {
     async fn test_process_outbound() {
         let store = InMemoryStore::new();
         let conv = setup_conversation(&store).await;
-        let engine = SimulationEngine::new(store.clone(), None);
+        let engine = SimulationEngine::new(store.clone(), None, None);
 
         let message = engine
             .process_outbound(&conv.from_phone, "Reply from bot")
@@ -412,7 +436,7 @@ mod tests {
     #[tokio::test]
     async fn test_process_outbound_unknown_phone() {
         let store = InMemoryStore::new();
-        let engine = SimulationEngine::new(store, None);
+        let engine = SimulationEngine::new(store, None, None);
 
         let result = engine
             .process_outbound("+19999999999", "message to nobody")

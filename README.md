@@ -76,6 +76,7 @@ All configuration via environment variables:
 | `WHATSIM_ENABLE_PERSISTENCE` | `false` | Enable SQLite persistence |
 | `WHATSIM_DB_PATH` | — | Path to SQLite database file |
 | `WHATSIM_DEFAULT_ORGANIZATION_ID` | — | Default org ID for new conversations |
+| `WHATSIM_WEBHOOK_SECRET` | — | App secret for signing webhook payloads (X-Hub-Signature-256) |
 | `WHATSIM_PUBLIC_BASE_URL` | `http://127.0.0.1:3210` | Public URL for the server |
 
 Copy `.env.example` to `.env` to get started.
