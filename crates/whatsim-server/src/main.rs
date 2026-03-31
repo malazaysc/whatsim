@@ -1,23 +1,13 @@
-mod assets;
-mod errors;
-mod routes;
-mod state;
-
 use std::net::SocketAddr;
 
-use axum::routing::{get, post};
-use axum::Router;
 use tokio::sync::broadcast;
-use tower_http::compression::CompressionLayer;
-use tower_http::cors::CorsLayer;
-use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 
 use whatsim_core::config::AppConfig;
+use whatsim_server::build_app;
+use whatsim_server::state::AppState;
 use whatsim_simulator::SimulationEngine;
 use whatsim_storage::InMemoryStore;
-
-use crate::state::AppState;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -41,45 +31,7 @@ async fn main() -> anyhow::Result<()> {
         tx,
     };
 
-    // Build the router.
-    let app = Router::new()
-        // Health check
-        .route("/health", get(routes::health::health))
-        // API routes
-        .route("/api/config", get(routes::config::get_config))
-        .route(
-            "/api/conversations",
-            get(routes::conversations::list_conversations)
-                .post(routes::conversations::create_conversation),
-        )
-        .route(
-            "/api/conversations/{id}",
-            get(routes::conversations::get_conversation),
-        )
-        .route(
-            "/api/conversations/{id}/messages",
-            get(routes::messages::list_messages),
-        )
-        .route(
-            "/api/conversations/{id}/events",
-            get(routes::events::list_events),
-        )
-        .route(
-            "/api/messages/inbound-text",
-            post(routes::messages::inbound_text),
-        )
-        .route(
-            "/api/mock-meta/messages",
-            post(routes::mock_meta::send_message),
-        )
-        .route("/api/stream", get(routes::stream::event_stream))
-        // Static assets / SPA fallback
-        .fallback(get(assets::static_handler))
-        // Middleware
-        .layer(CompressionLayer::new())
-        .layer(CorsLayer::permissive())
-        .layer(TraceLayer::new_for_http())
-        .with_state(app_state);
+    let app = build_app(app_state);
 
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
     tracing::info!("Whatsim server starting at http://{}", addr);

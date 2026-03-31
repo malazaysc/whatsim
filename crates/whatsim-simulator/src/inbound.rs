@@ -295,3 +295,134 @@ impl SimulationEngine {
         Ok(message)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use whatsim_core::{Conversation, EventType, MessageDirection};
+
+    /// Helper: build a test conversation and insert it into the store.
+    async fn setup_conversation(store: &InMemoryStore) -> Conversation {
+        let now = Utc::now();
+        let conversation = Conversation {
+            id: Uuid::new_v4(),
+            organization_id: Some("org-test".into()),
+            contact_name: Some("Test User".into()),
+            from_phone: "+15551112222".into(),
+            to_phone: "+15553334444".into(),
+            created_at: now,
+            updated_at: now,
+            metadata: None,
+        };
+        store
+            .create_conversation(conversation.clone())
+            .await
+            .unwrap();
+        conversation
+    }
+
+    #[tokio::test]
+    async fn test_simulate_inbound_text() {
+        let store = InMemoryStore::new();
+        let conv = setup_conversation(&store).await;
+        let engine = SimulationEngine::new(store.clone(), None);
+
+        let (message, normalized_event) = engine
+            .simulate_inbound_text(conv.id, "Hello from test")
+            .await
+            .unwrap();
+
+        // Returned message has correct conversation_id, direction, and text.
+        assert_eq!(message.conversation_id, conv.id);
+        assert_eq!(message.direction, MessageDirection::Inbound);
+        assert_eq!(message.text.as_deref(), Some("Hello from test"));
+
+        // Normalized event has correct fields.
+        assert_eq!(normalized_event.from_phone, conv.from_phone);
+        assert_eq!(normalized_event.text.as_deref(), Some("Hello from test"));
+        assert_eq!(normalized_event.provider, "meta_simulated");
+
+        // Store has the message.
+        let messages = store.list_messages(conv.id).await.unwrap();
+        assert_eq!(messages.len(), 1);
+        assert_eq!(messages[0].id, message.id);
+
+        // Store has events (at least 1 InboundMessage event).
+        let events = store.list_events(conv.id).await.unwrap();
+        assert!(!events.is_empty());
+        assert!(events
+            .iter()
+            .any(|e| e.event_type == EventType::InboundMessage));
+
+        // Store has payload snapshot.
+        let snapshot = store
+            .get_payload_snapshot(message.raw_payload_id.unwrap())
+            .await
+            .unwrap();
+        assert!(snapshot.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_simulate_inbound_text_missing_conversation() {
+        let store = InMemoryStore::new();
+        let engine = SimulationEngine::new(store, None);
+
+        let result = engine
+            .simulate_inbound_text(Uuid::new_v4(), "ghost message")
+            .await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(
+            matches!(err, WhatsimError::NotFound(_)),
+            "expected NotFound, got: {err:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_process_outbound() {
+        let store = InMemoryStore::new();
+        let conv = setup_conversation(&store).await;
+        let engine = SimulationEngine::new(store.clone(), None);
+
+        let message = engine
+            .process_outbound(&conv.from_phone, "Reply from bot")
+            .await
+            .unwrap();
+
+        // Returned message has direction Outbound and correct text.
+        assert_eq!(message.direction, MessageDirection::Outbound);
+        assert_eq!(message.text.as_deref(), Some("Reply from bot"));
+        assert_eq!(message.conversation_id, conv.id);
+
+        // Store has the outbound message.
+        let messages = store.list_messages(conv.id).await.unwrap();
+        assert_eq!(messages.len(), 1);
+        assert_eq!(messages[0].id, message.id);
+        assert_eq!(messages[0].direction, MessageDirection::Outbound);
+
+        // Store has events (at least 1 OutboundMessage event).
+        let events = store.list_events(conv.id).await.unwrap();
+        assert!(!events.is_empty());
+        assert!(events
+            .iter()
+            .any(|e| e.event_type == EventType::OutboundMessage));
+    }
+
+    #[tokio::test]
+    async fn test_process_outbound_unknown_phone() {
+        let store = InMemoryStore::new();
+        let engine = SimulationEngine::new(store, None);
+
+        let result = engine
+            .process_outbound("+19999999999", "message to nobody")
+            .await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(
+            matches!(err, WhatsimError::NotFound(_)),
+            "expected NotFound, got: {err:?}"
+        );
+    }
+}
