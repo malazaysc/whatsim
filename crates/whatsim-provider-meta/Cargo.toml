@@ -1,0 +1,11 @@
+[package]
+name = "whatsim-provider-meta"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+whatsim-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }

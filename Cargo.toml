@@ -1,0 +1,53 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/whatsim-core",
+    "crates/whatsim-storage",
+    "crates/whatsim-provider-meta",
+    "crates/whatsim-simulator",
+    "crates/whatsim-server",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/malazaysc/whatsim"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Web framework
+axum = { version = "0.8", features = ["ws"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "compression-gzip", "trace"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# IDs and time
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# Embed frontend assets
+rust-embed = { version = "8", features = ["mime-guess"] }
+
+# Internal crates
+whatsim-core = { path = "crates/whatsim-core" }
+whatsim-storage = { path = "crates/whatsim-storage" }
+whatsim-provider-meta = { path = "crates/whatsim-provider-meta" }
+whatsim-simulator = { path = "crates/whatsim-simulator" }
+whatsim-server = { path = "crates/whatsim-server" }
