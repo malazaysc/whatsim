@@ -22,6 +22,7 @@ Whatsim lets you simulate WhatsApp Business conversations locally — send fake 
 
 - [Rust](https://rustup.rs/) (stable)
 - [Node.js](https://nodejs.org/) (v18+)
+- [pnpm](https://pnpm.io/) (v9+)
 
 ### Build & Run
 
@@ -31,7 +32,7 @@ git clone https://github.com/malazaysc/whatsim.git
 cd whatsim
 
 # Build frontend
-cd web && npm install && npm run build && cd ..
+cd web && pnpm install && pnpm run build && cd ..
 
 # Run (dev mode)
 WHATSIM_WEBHOOK_TARGET=http://localhost:3000/api/webhooks/whatsapp \
@@ -46,7 +47,7 @@ Run frontend and backend separately for hot-reload:
 
 ```bash
 # Terminal 1: Vite dev server with proxy
-cd web && npm run dev
+cd web && pnpm run dev
 
 # Terminal 2: Rust backend
 cargo run -p whatsim-server
@@ -57,7 +58,7 @@ cargo run -p whatsim-server
 ### Production Build
 
 ```bash
-cd web && npm install && npm run build && cd ..
+cd web && pnpm install && pnpm run build && cd ..
 cargo build --release
 ./target/release/whatsim
 ```

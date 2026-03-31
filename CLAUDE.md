@@ -26,11 +26,11 @@ React + Vite + TypeScript + Tailwind CSS. Builds to `web/dist/` which is embedde
 
 ```bash
 # Dev mode (frontend + backend separate)
-cd web && npm run dev          # Terminal 1: Vite dev server on :5173
+cd web && pnpm run dev          # Terminal 1: Vite dev server on :5173
 cargo run -p whatsim-server    # Terminal 2: Rust server on :3210
 
 # Production build
-cd web && npm run build        # Build frontend to web/dist/
+cd web && pnpm run build        # Build frontend to web/dist/
 cargo build --release          # Embeds web/dist/ into binary
 ./target/release/whatsim       # Single binary serves everything
 ```
@@ -42,8 +42,8 @@ cargo check                    # Type-check all crates
 cargo test                     # Run all tests
 cargo test -p whatsim-core     # Test specific crate
 cargo clippy                   # Lint
-cd web && npm run build        # Build frontend
-cd web && npm run dev          # Dev frontend with HMR
+cd web && pnpm run build        # Build frontend
+cd web && pnpm run dev          # Dev frontend with HMR
 ```
 
 ## API Endpoints
